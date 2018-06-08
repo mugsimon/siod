@@ -2563,6 +2563,26 @@ static LISP os_classification(void)
 #endif
   return(NIL);}
 
+//////////////////////////////
+//my code is here/////////////
+//////////////////////////////
+/*LISP assoc(LISP lis, LISP key){
+  return;
+  }*/
+LISP cadddr(LISP x)
+{
+  return(car(cdr(cddr(x))));
+}
+LISP g(LISP x, LISP y){
+  LISP s;
+  s = read_from_string(strcons(1, "\"1\""));
+  return s;
+  //return (cons(x, (plus(s, y))));
+  //return (cons(x, (plus(1, y))));
+  //return (cons(x, y));
+  //return(cons(x, (plus(1, y))));
+}
+///////////////////////////////
 void init_subrs_1(void)
 {init_subr_2("cons",cons);
  init_subr_1("car",car);
@@ -2659,6 +2679,12 @@ void init_subrs_1(void)
  init_subr_1("srand",lsrand);
  init_subr_0("last-c-error",lllast_c_errmsg);
  init_subr_0("os-classification",os_classification);
+ /////////////////////////////
+ //my code////////////////////
+ /////////////////////////////
+ init_subr_1("cadddr", cadddr);
+ init_subr_2("g", g);
+ /////////////////////////////
  init_slib_version();}
 
 

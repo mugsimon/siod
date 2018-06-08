@@ -2573,14 +2573,9 @@ LISP cadddr(LISP x)
 {
   return(car(cdr(cddr(x))));
 }
+
 LISP g(LISP x, LISP y){
-  LISP s;
-  s = read_from_string(strcons(1, "\"1\""));
-  return s;
-  //return (cons(x, (plus(s, y))));
-  //return (cons(x, (plus(1, y))));
-  //return (cons(x, y));
-  //return(cons(x, (plus(1, y))));
+  return (cons(x, (plus(flocons(1), y))));
 }
 ///////////////////////////////
 void init_subrs_1(void)

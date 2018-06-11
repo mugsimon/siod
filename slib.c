@@ -1748,7 +1748,7 @@ LISP lapply(LISP fcn,LISP args)
 
 LISP setvar(LISP var,LISP val,LISP env)
 {LISP tmp;
- if NSYMBOLP(var) err("wta(non-symbol) to setvar",var);
+ if NSYMBOLP(var) err("wta(non-symbol) to setvar",var); //simon:var is not symbol
  tmp = envlookup(var,env);
  if NULLP(tmp) return(VCELL(var) = val);
  return(CAR(tmp)=val);}
@@ -2571,12 +2571,54 @@ static LISP os_classification(void)
   }*/
 LISP cadddr(LISP x)
 {
-  return(car(cdr(cddr(x))));
+  return (car(cdr(cddr(x))));
 }
 
 LISP g(LISP x, LISP y){
   return (cons(x, (plus(flocons(1), y))));
 }
+
+LISP list_numberp(LISP x){
+  if(NULLP(x)){
+    return (NIL);
+  }else if(NNULLP(numberp(car(x)))){
+    return (sym_t);
+  }
+  x=cdr(x);
+  while(NNULLP(x)){
+    if(NNULLP(numberp(car(x)))){
+      return (sym_t);
+    }else{
+      x=cdr(x);
+    }
+  }
+  return (NIL);
+}
+LISP zerop(LISP x){
+  if(NULLP(FLONUMP(x))){
+    err("not a number:", x);
+  }else if(FLONM(x)==0){
+    return (sym_t);
+  }else{
+    return (NIL);
+  }
+}
+LISP oddp(LISP x);
+LISP evenp(LISP x){
+  if(NNULLP(zerop(x))){
+    return (sym_t);
+  }else{
+    return (oddp(difference(x, flocons(1))));
+  }
+}
+LISP oddp(LISP x){
+  if(NNULLP(zerop(x))){
+    return (NIL);
+  }else{
+    return (evenp(difference(x, flocons(1))));
+  }
+}
+
 ///////////////////////////////
 void init_subrs_1(void)
 {init_subr_2("cons",cons);
@@ -2621,7 +2663,7 @@ void init_subrs_1(void)
  init_subr_2("*throw",lthrow);
  init_fsubr("quote",leval_quote);
  init_lsubr("apropos",apropos);
- init_lsubr("verbose",siod_verbose);
+ init_lsubr("verbose",siod_verbose);9
  init_subr_1("copy-list",copy_list);
  init_lsubr("gc-status",gc_status);
  init_lsubr("gc",user_gc);
@@ -2679,6 +2721,11 @@ void init_subrs_1(void)
  /////////////////////////////
  init_subr_1("cadddr", cadddr);
  init_subr_2("g", g);
+ init_subr_1("list-number?", list_numberp);
+ init_subr_1("zero?", zerop);
+ init_subr_1("ceven?", evenp);
+ init_subr_1("codd?", oddp);
+ 
  /////////////////////////////
  init_slib_version();}
 

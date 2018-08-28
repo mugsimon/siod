@@ -79,6 +79,22 @@ gjc@world.std.com
 
 #include "siod.h"
 #include "siodp.h"
+//cscm
+#define CSCM LISP      //type
+#define CSCM_VOID void //void
+#define CSCM_MAKE_NUMBER(n) (flocons(n))
+#define CSCM_PLUS(n1, n2) (plus(n1, n2))
+#define CSCM_MINUS(n1, n2) (difference(n1, n2))
+#define CSCM_TIMES(n1, n2) (ltimes(n1, n2))
+#define CSCM_EQUAL(n1, n2) (eql(n1, n2))
+#define CSCM_LESS(n1, n2) (lessp(n1, n2))
+#define CSCM_GREATER(n1, n2) (greaterp(n1, n2))
+#define CSCM_CAR(x) (car(x))
+#define CSCM_CDR(x) (cdr(x))
+#define CSCM_CONS(x, y) (cons(x, y))
+
+///
+
 
 static void init_slib_version(void)
 {setvar(cintern("*slib-version*"),
@@ -240,14 +256,14 @@ void __stdcall print_hs_2(void)
    else
      printf("heaps[0] at %p\n",heaps[0]);}}
 
-long no_interrupt(long n)
+long no_interrupt(long n) //1割り込みを行わない0割り込みを行う
 {long x;
  x = nointerrupt;
  nointerrupt = n;
  if ((nointerrupt == 0) && (interrupt_differed == 1))
    {interrupt_differed = 0;
     err_ctrl_c();}
- return(x);}
+ return(x);} //もとの設定値を返す(あとで復帰させるために)
 
 void handle_sigfpe(int sig SIG_restargs)
 {
@@ -883,8 +899,8 @@ LISP gen_intern(char *name,long copyp)
 {LISP l,sym,sl;
  char *cname;
  long hash=0,n,c,flag;
- flag = no_interrupt(1);
- if (obarray_dim > 1)
+ flag = no_interrupt(1); //割り込み防止,flagにもとの状態を退避
+ if (obarray_dim > 1) //hash計算可能なとき
    {hash = 0;
     n = obarray_dim;
     cname = name;
@@ -893,10 +909,10 @@ LISP gen_intern(char *name,long copyp)
  else
    sl = oblistvar;
  for(l=sl;NNULLP(l);l=CDR(l))
-   if (strcmp(name,PNAME(CAR(l))) == 0)
-     {no_interrupt(flag);
+   if (strcmp(name,PNAME(CAR(l))) == 0) //slが指す文字列とnameが同じ時
+     {no_interrupt(flag); //割り込み設定を復帰
       return(CAR(l));}
- if (copyp == 1)
+ if (copyp == 1) //simon:ヒープ上に別な領域を確保して文字列をコピー
    {cname = (char *) must_malloc(strlen(name)+1);
     strcpy(cname,name);}
  else
@@ -1502,7 +1518,7 @@ LISP extend_env(LISP actuals,LISP formals,LISP env)
 
 #define ENVLOOKUP_TRICK 1
 
-LISP envlookup(LISP var,LISP env)
+LISP envlookup(LISP var,LISP env) //simon:
 {LISP frame,al,fl,tmp;
  for(frame=env;CONSP(frame);frame=CDR(frame))
    {tmp = CAR(frame);
@@ -1527,7 +1543,7 @@ void set_eval_hooks(long type,LISP (*fcn)(LISP, LISP *,LISP *))
 LISP err_closure_code(LISP tmp)
 {return(err("closure code type not valid",tmp));}
 
-LISP leval(LISP x,LISP env)
+LISP leval(LISP x,LISP env) //simon:eval
 {LISP tmp,arg1;
  struct user_type_hooks *p;
  STACK_CHECK(&x);
@@ -1746,7 +1762,7 @@ LISP lapply(LISP fcn,LISP args)
       else
 	return(err("cannot be applied",fcn));}}
 
-LISP setvar(LISP var,LISP val,LISP env)
+LISP setvar(LISP var,LISP val,LISP env) //simon:set val to var in env
 {LISP tmp;
  if NSYMBOLP(var) err("wta(non-symbol) to setvar",var); //simon:var is not symbol
  tmp = envlookup(var,env);
@@ -2564,7 +2580,7 @@ static LISP os_classification(void)
   return(NIL);}
 
 //////////////////////////////
-//my code is here/////////////
+//my code/////////////////////
 //////////////////////////////
 /*LISP assoc(LISP lis, LISP key){
   return;
@@ -2573,9 +2589,14 @@ LISP cadddr(LISP x)
 {
   return (car(cdr(cddr(x))));
 }
-
+/*
 LISP g(LISP x, LISP y){
   return (cons(x, (plus(flocons(1), y))));
+}*/
+CSCM g(CSCM x, CSCM y)
+{
+  CSCM g2 = (CSCM_PLUS(CSCM_MAKE_NUMBER(1), y));
+  return (CSCM_CONS(x, g2));
 }
 
 LISP list_numberp(LISP x){
@@ -2618,6 +2639,58 @@ LISP oddp(LISP x){
     return (evenp(difference(x, flocons(1))));
   }
 }
+
+LISP accumu_number_sub(LISP i, LISP a){
+  return (cons(ltimes(i, flocons((double) 10.0)), a));
+}
+
+LISP myeval(LISP x){
+  return (leval(x, NIL));
+}
+
+CSCM fact(CSCM n)
+{
+  CSCM fact31 = (CSCM_EQUAL(n, CSCM_MAKE_NUMBER(0)));
+  if (fact31)
+  {
+    return CSCM_MAKE_NUMBER(1);
+  }
+  else
+  {
+    CSCM fact32 = (CSCM_MINUS(n, CSCM_MAKE_NUMBER(1)));
+    CSCM fact33 = (fact(fact32));
+    return (CSCM_TIMES(n, fact33));
+  }
+}
+
+///
+// GC protect test
+///
+CSCM gc_stack[100];
+int gc_stack_top = 0;
+CSCM push(CSCM x){
+     gc_stack[gc_stack_top++] = x;
+}
+CSCM pop(void)
+{
+  return gc_stack[--gc_stack_top];
+}
+
+CSCM apply_GC_protect_1_2(CSCM func, CSCM x, CSCM *root1, CSCM *root2)
+{
+  CSCM retval;
+  push(*root1);
+  push(*root2);
+  retval = lapply(func, cons(x, NIL));
+  *root2 = pop();
+  *root1 = pop();
+  return retval;
+}
+CSCM f(CSCM mysqrt, CSCM x, CSCM y){
+  CSCM f1 = apply_GC_protect_1_2(mysqrt, x, &x, &y);
+  return plus(f1, y);
+}
+
 
 ///////////////////////////////
 void init_subrs_1(void)
@@ -2663,7 +2736,7 @@ void init_subrs_1(void)
  init_subr_2("*throw",lthrow);
  init_fsubr("quote",leval_quote);
  init_lsubr("apropos",apropos);
- init_lsubr("verbose",siod_verbose);9
+ init_lsubr("verbose",siod_verbose);
  init_subr_1("copy-list",copy_list);
  init_lsubr("gc-status",gc_status);
  init_lsubr("gc",user_gc);
@@ -2725,7 +2798,10 @@ void init_subrs_1(void)
  init_subr_1("zero?", zerop);
  init_subr_1("ceven?", evenp);
  init_subr_1("codd?", oddp);
- 
+ init_subr_2("accumu-number-sub", accumu_number_sub);
+ init_subr_1("fact", fact);
+ init_subr_3("f", f);
+ //init_subr_1("sample", sample);
  /////////////////////////////
  init_slib_version();}
 
